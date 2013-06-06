@@ -8,8 +8,8 @@
 
 #import <Foundation/Foundation.h>
 
-@interface iOS_saap : NSObject
+@interface iOS_saap : NSURLConnection
 
-- (NSString*)echo:(NSString*) msg;
+- (NSString*) echo:(NSString*) msg;
 
 @end

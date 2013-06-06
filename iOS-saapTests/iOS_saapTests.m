@@ -23,15 +23,26 @@
 {
     // Tear-down code here.
     
-    NSLog(@"=========== THE END ===========");
+    NSLog(@"=========== THE   END ===========");
     [super tearDown];
 }
 
 - (void)testExample
 {
-    // STFail(@"Unit tests are not implemented yet in iOS-saapTests");
-    iOS_saap* mySaapClient = [[iOS_saap alloc] init];
-    NSLog(@"%@", [mySaapClient echo: @"Whut"]);
+    NSURL *             myURL = [[NSURL alloc] initWithString:@"http://as.jellyfishsurpriseparty.com/"];
+    NSURLRequest *      myRequest = [[NSURLRequest alloc] initWithURL:myURL];
+    NSHTTPURLResponse * myResponse = [[NSHTTPURLResponse alloc] init];
+    NSError *           myError = [[NSError alloc] init];
+
+    NSData * myData = [iOS_saap sendSynchronousRequest:myRequest returningResponse: &myResponse error:&myError];
+    NSString * result = [[NSString alloc] initWithData:myData encoding:NSUTF8StringEncoding];
+    NSString * errorDomain = myError.domain;
+    NSInteger  errorCode   = myError.code;
+    NSString * requestHeader = myRequest.HTTPMethod;
+    NSLog(@"%@", requestHeader);
+    NSLog(@"%@", result);
+    NSLog(@"%@", errorDomain);
+    NSLog(@"%d", errorCode);
 }
 
 @end

@@ -10,14 +10,16 @@
 
 @implementation iOS_saap
 
+#pragma mark -
+#pragma mark Initialization
 #pragma mark NSURLConnection Delegate Methods
-- (void)connection:(NSURLConnection *)myConnection didReceiveData:(NSData *)data {
+- (void)connection:(NSURLConnection *)self didReceiveData:(NSData *)data {
     // Append the new data to the instance variable you declared
     NSLog(@"%@", (NSString *) data);
 }
 
 
-- (void)connection:(NSURLConnection *)myConnection didReceiveResponse:(NSURLResponse *)response {
+- (void)connection:(NSURLConnection *)self didReceiveResponse:(NSURLResponse *)response {
     // Append the new data to the instance variable you declared
     NSLog(@"======================");
 }
@@ -25,16 +27,7 @@
 
 
 - (NSString*) echo: (NSString*)msg {
-
-    NSURL *             myURL = [[NSURL alloc] initWithString:@"http://as.jellyfishsurpriseparty.com/"];
-    NSURLRequest *      myRequest = [[NSURLRequest alloc] initWithURL:myURL];
-    NSURLResponse *     myResponse = [[NSURLResponse alloc] init];
-
-    NSData * myData = [NSURLConnection sendSynchronousRequest:myRequest returningResponse: &myResponse error:NULL];
-    NSString * result = [[NSString alloc] initWithData:myData encoding:NSUTF8StringEncoding];
-    NSString * status = [[myResponse URL] absoluteString];
-    return [[result stringByAppendingString:@"\n"] stringByAppendingString:status];
-    
+    return msg;
 }
 
 
