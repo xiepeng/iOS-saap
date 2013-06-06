@@ -24,14 +24,16 @@
 
 
 
-- (NSString*) echo: (NSString*)msg
-{
+- (NSString*) echo: (NSString*)msg {
 
     NSURL *             myURL = [[NSURL alloc] initWithString:@"http://as.jellyfishsurpriseparty.com/"];
     NSURLRequest *      myRequest = [[NSURLRequest alloc] initWithURL:myURL];
+    NSURLResponse *     myResponse = [[NSURLResponse alloc] init];
 
-    NSData * myData = [NSURLConnection sendSynchronousRequest:myRequest returningResponse:NULL error:NULL];
-    return [[NSString alloc] initWithData:myData encoding:NSUTF8StringEncoding];
+    NSData * myData = [NSURLConnection sendSynchronousRequest:myRequest returningResponse: &myResponse error:NULL];
+    NSString * result = [[NSString alloc] initWithData:myData encoding:NSUTF8StringEncoding];
+    NSString * status = [[myResponse URL] absoluteString];
+    return [[result stringByAppendingString:@"\n"] stringByAppendingString:status];
     
 }
 
