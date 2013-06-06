@@ -7,13 +7,15 @@
 //
 
 #import "iOS_saapTests.h"
+#import "iOS_saap.h"
 
 @implementation iOS_saapTests
 
 - (void)setUp
 {
     [super setUp];
-    
+    NSLog(@"=========== THE START ===========");
+
     // Set-up code here.
 }
 
@@ -21,12 +23,15 @@
 {
     // Tear-down code here.
     
+    NSLog(@"=========== THE END ===========");
     [super tearDown];
 }
 
 - (void)testExample
 {
-    STFail(@"Unit tests are not implemented yet in iOS-saapTests");
+    // STFail(@"Unit tests are not implemented yet in iOS-saapTests");
+    iOS_saap* mySaapClient = [[iOS_saap alloc] init];
+    NSLog(@"%@", [mySaapClient echo: @"Whut"]);
 }
 
 @end
