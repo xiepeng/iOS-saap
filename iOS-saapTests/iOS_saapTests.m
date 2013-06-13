@@ -29,20 +29,20 @@
 
 - (void)testExample
 {
-    NSURL *             myURL = [[NSURL alloc] initWithString:@"http://as.jellyfishsurpriseparty.com/"];
-    NSURLRequest *      myRequest = [[NSURLRequest alloc] initWithURL:myURL];
-    NSHTTPURLResponse * myResponse = [[NSHTTPURLResponse alloc] init];
-    NSError *           myError = [[NSError alloc] init];
+    iOS_saap * myClient = [[iOS_saap alloc] init];
 
-    NSData * myData = [iOS_saap sendSynchronousRequest:myRequest returningResponse: &myResponse error:&myError];
-    NSString * result = [[NSString alloc] initWithData:myData encoding:NSUTF8StringEncoding];
-    NSString * errorDomain = myError.domain;
-    NSInteger  errorCode   = myError.code;
-    NSString * requestHeader = myRequest.HTTPMethod;
-    NSLog(@"%@", requestHeader);
-    NSLog(@"%@", result);
-    NSLog(@"%@", errorDomain);
-    NSLog(@"%d", errorCode);
+
+    NSURL *             myURL = [[NSURL alloc] initWithString:@"http://as.jellyfishsurpriseparty.com/"];
+    NSMutableURLRequest * myRequest = [[NSMutableURLRequest alloc] initWithURL:myURL];
+    NSHTTPURLResponse * myResponse = [NSHTTPURLResponse alloc];
+    NSError *           myError = [NSError alloc];
+
+    myRequest.HTTPMethod = @"GET";
+    NSData * myData = [NSURLConnection sendSynchronousRequest:myRequest returningResponse:&myResponse error:&myError];
+    NSURLConnection * myConnection = [[NSURLConnection alloc] initWithRequest:myRequest delegate:myClient];
+
+    NSLog(@"%@", [[NSString alloc] initWithData:myData encoding:NSUTF8StringEncoding]);
+    NSLog(@"%@", [NSURLConnection canHandleRequest:myRequest]?@"Yes":@"No");
 }
 
 @end
