@@ -16,6 +16,7 @@
 @property NSHTTPURLResponse *   res;
 @property NSMutableData *       partialData;
 
+
 + (NSString *) base64EncodeData: (NSData *) objData;
 + (NSString *) base64EncodeString: (NSString *) strData;
 
@@ -31,6 +32,8 @@
 @synthesize signingAlgorithm = _signingAlgorithm;
 @synthesize responseData = _responseData;
 @synthesize partialData = _partialData;
+@synthesize isInTheMiddleOfLoading = _isInTheMiddleOfLoading;
+@synthesize delegate = _delegate;
 
 static const char _base64EncodingTable[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
@@ -78,44 +81,55 @@ static const char _base64EncodingTable[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefgh
 	}
 
 	// Terminate the string-based result
-	*objPointer = '\0';
+	// *objPointer = '\0';
+    NSString * resultString = [NSString stringWithCString:strResult encoding:NSASCIIStringEncoding];
 
-	// Return the results as an NSString object
-	return [NSString stringWithCString:strResult encoding:NSASCIIStringEncoding];
+    free(strResult);
+
+    // Return the results as an NSString object
+	return resultString;
 }
 
 - (void)connectionDidFinishLoading:(NSURLConnection *) conn {
     _responseData = [_partialData copy];
-    
-    NSLog(@"Finished loading data.");
+    _isInTheMiddleOfLoading = NO;
+    // NSLog(@"Finished loading data.");
     NSError * myError = [NSError alloc];
 
     id jsonData = [[NSJSONSerialization JSONObjectWithData:self.responseData options:NSJSONReadingMutableContainers error:&myError] init];
-    NSLog(@"%@", [NSJSONSerialization isValidJSONObject:jsonData]?@"Is valid JSON" : @"Not valid JSON");
-    NSLog(@"%@", [((NSArray *)[jsonData valueForKeyPath:@"FlightSearchRS.Itineraries"]) objectAtIndex:0]);
+    // NSLog(@"%@", [NSJSONSerialization isValidJSONObject:jsonData]?@"Is valid JSON" : @"Not valid JSON");
+    NSLog(@"%@", [[((NSArray *)[jsonData valueForKeyPath:@"FlightSearchRS.Itineraries"]) objectAtIndex:0] valueForKeyPath:@"CurrencyCode"]);
+    if ([NSJSONSerialization isValidJSONObject:jsonData]) {
+        [self.delegate dataLoaded: jsonData];
+    } else {
+        [self.delegate failedWithError:[[NSError alloc] initWithDomain:@"InvalidJSON" code:1 userInfo:[[NSDictionary alloc] init]]];
+    }
 }
 
 
 - (void)connection:(NSURLConnection *)conn didReceiveData:(NSData *)data {
     [_partialData appendData:data];
-    //NSLog(@"Received data.");
+    // NSLog(@"Received data.");
 }
 
 - (void)connection:(NSURLConnection *)conn didReceiveResponse:(NSHTTPURLResponse *)response {
     _partialData = [[NSMutableData alloc] init];
-    NSLog(@"Received response.");
+    // NSLog(@"Received response.");
 }
 
 - (void)connection:(NSURLConnection *)conn didFailWithError:(NSError *) error {
     NSLog(@"%@", error);
+    _isInTheMiddleOfLoading = NO;
+    [self.delegate failedWithError:error];
 }
 
 
-
-
-
-- (SaapClient *) initWithEndPoint:(NSString *)endPoint accessKeyId:(NSString *)accessKeyId secretKey:(NSString *)secretKey accessProtocol:(SaapAccessProtocol)protocol {
-
+- (SaapClient *) initWithEndPoint: (NSString *) endPoint
+                      accessKeyId: (NSString *) accessKeyId
+                        secretKey: (NSString *) secretKey
+                   accessProtocol: (SaapAccessProtocol) protocol
+                         delegate: (id <SaapDelegate>) delegate {
+    _delegate = delegate;
     _signingAlgorithm = @"SAAP1-HMAC-SHA256";
     _endPoint    = endPoint;
     _accessKeyId = accessKeyId;
@@ -145,7 +159,6 @@ static const char _base64EncodingTable[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefgh
     [stringToSign appendFormat:@"\n%@%@", @"path:", path];
     [stringToSign appendFormat:@"\n%@%@", @"AccessKeyId:", self.accessKeyId];
 
-
     /*
     NSDateFormatter *mmddccyy = [[NSDateFormatter alloc] init];
     mmddccyy.timeStyle = NSDateFormatterNoStyle;
@@ -163,7 +176,7 @@ static const char _base64EncodingTable[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefgh
     [stringToSign appendFormat:@"\n%@%@", @"Date:", [dateFormatter stringFromDate: now]];
     [stringToSign appendString:@"\n"];
 
-    NSLog(@"stringToSign=\n%@", stringToSign);
+    // NSLog(@"stringToSign=\n%@", stringToSign);
 
     const char *cKey  = [self.secretKey cStringUsingEncoding:NSUTF8StringEncoding];
     const char *cData = [stringToSign cStringUsingEncoding:NSUTF8StringEncoding];
@@ -174,19 +187,19 @@ static const char _base64EncodingTable[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefgh
 
     NSString * signature = [[self class] base64EncodeData:[NSData dataWithBytes:cHMAC length:CC_SHA256_DIGEST_LENGTH]];
 
-    NSLog(@"%@", request);
-    NSLog(@"%@", signature);
+    // NSLog(@"%@", request);
+    // NSLog(@"%@", signature);
 
     [request addValue:[dateFormatter stringFromDate: now]   forHTTPHeaderField:@"x-saap-date"];
     [request addValue:self.accessKeyId                      forHTTPHeaderField:@"x-saap-accesskeyid"];
     [request addValue:signature                             forHTTPHeaderField:@"x-saap-signature"];
 
-    NSLog(@"%@", request.allHTTPHeaderFields);
+    //NSLog(@"%@", request.allHTTPHeaderFields);
 
     return request;
 }
 
-- (void) pullRoundTripFlightsFromOrigin:(NSString *)origin toDestination:(NSString *)destination departingOnDate:(NSString *)departureDate returingOnDate:(NSString *)returnDate delegate:(id<SaapDelegate>)delegate {
+- (void) pullRoundTripFlightsFromOrigin:(NSString *)origin toDestination:(NSString *)destination departingOnDate:(NSString *)departureDate returingOnDate:(NSString *)returnDate {
 
     [self.conn cancel]; // Cancel any ongoing requests;
 
@@ -204,10 +217,11 @@ static const char _base64EncodingTable[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefgh
     self.req = [[NSMutableURLRequest alloc] initWithURL:url cachePolicy:NSURLRequestReloadIgnoringLocalCacheData timeoutInterval:5];
     self.req.HTTPMethod = @"GET";
     self.req  = [self signRequest: self.req];
-    self.conn = [[NSURLConnection alloc] initWithRequest:self.req delegate:delegate];
+    self.conn = [[NSURLConnection alloc] initWithRequest:self.req delegate:self];
+    _isInTheMiddleOfLoading = YES;
 }
 
-- (void) pullCalendarLeadPricesFromOrigin:(NSString *)origin toDestination:(NSString *)destination departureDateBegins:(NSString *)departureDateBegin departureDateEnds:(NSString *)departureDateEnd lengthOfStay:(NSInteger)lengthOfStay increment:(NSInteger)increment delegate:(id<SaapDelegate>)delegate {
+- (void) pullCalendarLeadPricesFromOrigin:(NSString *)origin toDestination:(NSString *)destination departureDateBegins:(NSString *)departureDateBegin departureDateEnds:(NSString *)departureDateEnd lengthOfStay:(NSInteger)lengthOfStay increment:(NSInteger)increment {
 
     [self.conn cancel]; // Cancel any ongoing requests;
 
@@ -229,11 +243,11 @@ static const char _base64EncodingTable[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefgh
     self.req = [[NSMutableURLRequest alloc] initWithURL:url cachePolicy:NSURLRequestReloadIgnoringLocalCacheData timeoutInterval:5];
     self.req.HTTPMethod = @"GET";
     self.req  = [self signRequest: self.req];
-    self.conn = [[NSURLConnection alloc] initWithRequest:self.req delegate:delegate];
-
+    self.conn = [[NSURLConnection alloc] initWithRequest:self.req delegate:self];
+    _isInTheMiddleOfLoading = YES;
 }
 
-- (void) pullDestinationLeadPricesFromOrigin:(NSString *)origin toDestinations: (NSString *) destinations departingOnDate:(NSString *)departureDate returningOnDate:(NSString *)returnDate delegate:(id<SaapDelegate>)delegate {
+- (void) pullDestinationLeadPricesFromOrigin:(NSString *)origin toDestinations: (NSString *) destinations departingOnDate:(NSString *)departureDate returningOnDate:(NSString *)returnDate {
 
     [self.conn cancel]; // Cancel any ongoing requests;
 
@@ -252,8 +266,13 @@ static const char _base64EncodingTable[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefgh
     self.req = [[NSMutableURLRequest alloc] initWithURL:url cachePolicy:NSURLRequestReloadIgnoringLocalCacheData timeoutInterval:5];
     self.req.HTTPMethod = @"GET";
     self.req  = [self signRequest: self.req];
-    self.conn = [[NSURLConnection alloc] initWithRequest:self.req delegate:delegate];
-
+    self.conn = [[NSURLConnection alloc] initWithRequest:self.req delegate:self];
+    _isInTheMiddleOfLoading = YES;
 }
+
+- (void) pullRoundTripFlightsFromOrigin:(NSString *)origin toDestination:(NSString *)destination departingOnDate:(NSString *)departureDate returingOnDate:(NSString *)returnDate topsisPreference:(id)preference {
+    [self pullRoundTripFlightsFromOrigin:origin toDestination:destination departingOnDate:departureDate returingOnDate:returnDate];
+}
+
 
 @end

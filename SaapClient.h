@@ -10,10 +10,13 @@
 #import <CommonCrypto/CommonHMAC.h>
 
 @protocol SaapDelegate <NSURLConnectionDelegate>
+@optional
+- (void) dataLoaded: (id) dataJSON;
+- (void) failedWithError: (NSError *) error;
 @end
 
 
-@interface SaapClient : NSObject <SaapDelegate>
+@interface SaapClient : NSObject <NSURLConnectionDelegate>
 
 enum SaapAccessProtocol {
     saapHTTP,
@@ -22,32 +25,51 @@ enum SaapAccessProtocol {
 
 typedef enum SaapAccessProtocol SaapAccessProtocol;
 
-@property (readonly) NSString * endPoint;
-@property (readonly) NSString * accessKeyId;
-@property (readonly) NSString * secretKey;
-@property (readonly) SaapAccessProtocol protocol;
-@property (readonly) NSString * description;
-@property (readonly) NSString * signingAlgorithm;
-@property (readonly) NSData   * responseData;
+@property (readonly)        NSString *          endPoint;
+@property (readonly)        NSString *          accessKeyId;
+@property (readonly)        NSString *          secretKey;
+@property (readonly)        SaapAccessProtocol  protocol;
+@property (readonly)        NSString *          description;
+@property (readonly)        NSString *          signingAlgorithm;
+@property (readonly)        NSData   *          responseData;
+@property (readonly)        BOOL                isInTheMiddleOfLoading;
+@property (readonly, weak)  id <SaapDelegate>   delegate;
+
+- (SaapClient *) initWithEndPoint: (NSString *) endPoint
+                      accessKeyId: (NSString *) accessKeyId
+                        secretKey: (NSString *) secretKey
+                   accessProtocol: (SaapAccessProtocol) protocol
+                         delegate: (id <SaapDelegate>) delegate;
+
+- (void) pullRoundTripFlightsFromOrigin: (NSString *) origin
+                          toDestination: (NSString *) destination
+                        departingOnDate: (NSString *) departureDate
+                         returingOnDate: (NSString *) returnDate;
+
+- (void) pullRoundTripFlightsFromOrigin: (NSString *) origin
+                          toDestination: (NSString *) destination
+                        departingOnDate: (NSString *) departureDate
+                         returingOnDate: (NSString *) returnDate
+                       topsisPreference: (id) preference;
 
 
-- (SaapClient *) initWithEndPoint: (NSString *) endPoint accessKeyId: (NSString *) accessKeyId secretKey:(NSString *) secretKey accessProtocol: (SaapAccessProtocol) protocol;
+- (void) pullCalendarLeadPricesFromOrigin: (NSString *) origin
+                            toDestination: (NSString *) destination
+                      departureDateBegins: (NSString *) departureDateBegin
+                        departureDateEnds: (NSString *) departureDateEnd
+                             lengthOfStay: (NSInteger) lengthOfStay
+                                increment: (NSInteger) increment;
 
-- (void) pullRoundTripFlightsFromOrigin: (NSString *) origin toDestination: (NSString *) destination departingOnDate: (NSString *) departureDate returingOnDate: (NSString *) returnDate delegate: (id <SaapDelegate>) delegate;
+- (void) pullDestinationLeadPricesFromOrigin: (NSString *) origin
+                              toDestinations: (NSString *) destinations
+                             departingOnDate: (NSString *) departureDate
+                             returningOnDate: (NSString *) returnDate;
 
-// - (void) pullRoundTripFlightsFromOrigin: (NSString *) origin toDestination: (NSString *) destination departingOnDate: (NSString *) departureDate returingOnDate: (NSString *) returnDate topsisPreference:(id) preference delegate: (id <SaapDelegate>) delegate;
-
-
-- (void) pullCalendarLeadPricesFromOrigin: (NSString *) origin toDestination: (NSString *) destination departureDateBegins: (NSString *) departureDateBegin departureDateEnds: (NSString *) departureDateEnd lengthOfStay: (NSInteger) lengthOfStay increment: (NSInteger) increment delegate: (id <SaapDelegate>) delegate;
-
-- (void) pullDestinationLeadPricesFromOrigin: (NSString *) origin toDestinations: (NSString *) destinations departingOnDate: (NSString *) departureDate returningOnDate:(NSString *) returnDate delegate:(id <SaapDelegate>) delegate;
-
-- (NSMutableURLRequest *) signRequest:(NSMutableURLRequest *) request;
+- (NSMutableURLRequest *) signRequest: (NSMutableURLRequest *) request;
 
 - (void)connectionDidFinishLoading:(NSURLConnection *) conn;
 - (void)connection:(NSURLConnection *)conn didReceiveData:(NSData *)data;
 - (void)connection:(NSURLConnection *)conn didReceiveResponse:(NSHTTPURLResponse *)response;
 - (void)connection:(NSURLConnection *)conn didFailWithError:(NSError *) error;
-
 
 @end
